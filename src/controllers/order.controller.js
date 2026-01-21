@@ -3,6 +3,45 @@ const Table = require('../models/Table')
 const Dish = require('../models/Dish')
 const { ORDER_STATUS } = require('../utils/constants')
 
+// exports.createOrder = async (req, res) => {
+//     const { table, items } = req.body
+
+//     if (!items || items.length === 0) {
+//         return res.status(400).json({ message: 'Order must contain items' })
+//     }
+
+//     const tableDoc = await Table.findById(table)
+//     if (!tableDoc) {
+//         return res.status(404).json({ message: 'Table not found' })
+//     }
+
+//     if (tableDoc.status === 'OCCUPIED') {
+//         return res.status(400).json({
+//             message: 'Table already has an active order'
+//         })
+//     }
+
+//     // validate dishes
+//     for (const item of items) {
+//         const dishExists = await Dish.findById(item.dish)
+//         if (!dishExists) {
+//             return res.status(404).json({ message: 'Dish not found' })
+//         }
+//     }
+
+//     const order = await Order.create({
+//         table,
+//         items,
+//         createdBy: req.user._id
+//     })
+
+//     // lock table
+//     tableDoc.status = 'OCCUPIED'
+//     await tableDoc.save()
+
+//     res.status(201).json(order)
+// }
+
 exports.createOrder = async (req, res) => {
     const { table, items } = req.body
 
@@ -21,26 +60,41 @@ exports.createOrder = async (req, res) => {
         })
     }
 
-    // validate dishes
+    const orderItems = []
+
     for (const item of items) {
-        const dishExists = await Dish.findById(item.dish)
-        if (!dishExists) {
+        const dish = await Dish.findById(item.dish)
+
+        if (!dish) {
             return res.status(404).json({ message: 'Dish not found' })
         }
+
+        if (!dish.isAvailable) {
+            return res.status(400).json({
+                message: `Dish ${dish.name} is not available`
+            })
+        }
+
+        orderItems.push({
+            dishId: dish._id,
+            dishName: dish.name,
+            unitPrice: dish.price,
+            quantity: item.quantity
+        })
     }
 
     const order = await Order.create({
         table,
-        items,
+        items: orderItems,
         createdBy: req.user._id
     })
 
-    // lock table
     tableDoc.status = 'OCCUPIED'
     await tableDoc.save()
 
     res.status(201).json(order)
 }
+
 
 
 exports.updateOrderByChef = async (req, res) => {
