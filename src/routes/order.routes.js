@@ -5,7 +5,9 @@ const {
     createOrder,
     updateOrderByChef,
     completeOrder,
-    getOrders
+    getOrders,
+    getOrdersForChef,
+    getOrdersForWaiter
 } = require('../controllers/order.controller')
 
 const { protect } = require('../middlewares/auth.middleware')
@@ -22,5 +24,9 @@ router.put('/:id/status', isChef, updateOrderByChef)
 
 // shared
 router.get('/', getOrders)
+
+router.get('/chef', isChef, getOrdersForChef)
+router.get('/waiter', isWaiter, getOrdersForWaiter)
+
 
 module.exports = router

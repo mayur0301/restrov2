@@ -15,10 +15,28 @@ exports.createCategory = async (req, res) => {
 
 
 // READ ALL
+// exports.getCategories = async (req, res) => {
+//     const categories = await Category.find()
+//     res.json({ success: true, data: { categories } })
+// }
 exports.getCategories = async (req, res) => {
-    const categories = await Category.find()
-    res.json({ success: true, data: { categories } })
+    const categories = await Category.find().sort({ name: 1 })
+
+    const data = categories.map((cat) => ({
+        id: cat._id,
+        name: cat.name,        // already normalized (lowercase in DB)
+        dishCount: cat.dishCount,
+        createdAt: cat.createdAt,
+        updatedAt: cat.updatedAt
+    }))
+
+    res.json({
+        success: true,
+        count: data.length,
+        data
+    })
 }
+
 
 // UPDATE
 exports.updateCategory = async (req, res) => {

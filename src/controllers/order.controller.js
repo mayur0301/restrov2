@@ -3,6 +3,60 @@ const Table = require('../models/Table')
 const Dish = require('../models/Dish')
 const { ORDER_STATUS } = require('../utils/constants')
 
+//New Updates
+const getStatusMeta = (status) => {
+    const map = {
+        PENDING: { label: 'Pending', color: 'gray', isFinal: false },
+        PREPARING: { label: 'Preparing', color: 'orange', isFinal: false },
+        READY: { label: 'Ready', color: 'green', isFinal: false },
+        COMPLETED: { label: 'Completed', color: 'blue', isFinal: true }
+    }
+    return map[status]
+}
+
+const getOrderActions = (order, role) => {
+    return {
+        canPrepare:
+            role === 'CHEF' && order.status === 'PENDING',
+
+        canMarkReady:
+            role === 'CHEF' && order.status === 'PREPARING',
+
+        canComplete:
+            role === 'WAITER' && order.status === 'READY'
+    }
+}
+
+const buildOrderSummary = (items) => {
+    let totalAmount = 0
+    let totalQuantity = 0
+
+    const enrichedItems = items.map((item) => {
+        const subtotal = item.unitPrice * item.quantity
+        totalAmount += subtotal
+        totalQuantity += item.quantity
+
+        return {
+            dishId: item.dishId,
+            name: item.dishName,
+            unitPrice: item.unitPrice,
+            quantity: item.quantity,
+            subtotal
+        }
+    })
+
+    return {
+        items: enrichedItems,
+        summary: {
+            totalItems: enrichedItems.length,
+            totalQuantity,
+            totalAmount
+        }
+    }
+}
+
+
+
 // exports.createOrder = async (req, res) => {
 //     const { table, items } = req.body
 
@@ -152,19 +206,131 @@ exports.completeOrder = async (req, res) => {
 }
 
 
+// exports.getOrders = async (req, res) => {
+//     const filter = {}
+
+//     // chef sees only active orders
+//     if (req.user.role === 'CHEF') {
+//         filter.status = { $in: ['PENDING', 'PREPARING', 'READY'] }
+//     }
+
+//     const orders = await Order.find(filter)
+//         .populate('table', 'name')
+//         .populate('createdBy', 'name role')
+
+//     res.json(orders)
+// }
+
 exports.getOrders = async (req, res) => {
     const filter = {}
 
-    // chef sees only active orders
     if (req.user.role === 'CHEF') {
         filter.status = { $in: ['PENDING', 'PREPARING', 'READY'] }
     }
 
     const orders = await Order.find(filter)
         .populate('table', 'name')
-        .populate('items.dish', 'name price')
         .populate('createdBy', 'name role')
+        .sort({ createdAt: -1 })
 
-    res.json(orders)
+    const response = orders.map((order) => {
+        const { items, summary } = buildOrderSummary(order.items)
+
+        return {
+            id: order._id,
+            table: {
+                id: order.table._id,
+                name: order.table.name
+            },
+            items,
+            summary,
+            status: order.status,
+            statusMeta: getStatusMeta(order.status),
+            actions: getOrderActions(order, req.user.role),
+            createdAt: order.createdAt,
+            createdBy: {
+                id: order.createdBy._id,
+                name: order.createdBy.name,
+                role: order.createdBy.role
+            }
+        }
+    })
+
+    res.json({
+        success: true,
+        count: response.length,
+        data: response
+    })
+}
+
+exports.getOrdersForChef = async (req, res) => {
+    const orders = await Order.find({
+        status: { $in: ['PENDING', 'PREPARING', 'READY'] }
+    })
+        .populate('table', 'name')
+        .sort({ createdAt: 1 })
+
+    const data = orders.map((order) => {
+        return {
+            id: order._id,
+            table: {
+                id: order.table._id,
+                name: order.table.name
+            },
+            items: order.items.map((item) => ({
+                dishId: item.dishId,
+                name: item.dishName,
+                quantity: item.quantity
+            })),
+            status: order.status,
+            statusMeta: getStatusMeta(order.status),
+            actions: {
+                canPrepare: order.status === 'PENDING',
+                canMarkReady: order.status === 'PREPARING'
+            },
+            createdAt: order.createdAt
+        }
+    })
+
+    res.json({
+        success: true,
+        count: data.length,
+        data
+    })
+}
+
+
+exports.getOrdersForWaiter = async (req, res) => {
+    const orders = await Order.find({
+        status: { $ne: 'COMPLETED' }
+    })
+        .populate('table', 'name')
+        .sort({ createdAt: 1 })
+
+    const data = orders.map((order) => {
+        const { items, summary } = buildOrderSummary(order.items)
+
+        return {
+            id: order._id,
+            table: {
+                id: order.table._id,
+                name: order.table.name
+            },
+            items,
+            summary,
+            status: order.status,
+            statusMeta: getStatusMeta(order.status),
+            actions: {
+                canComplete: order.status === 'READY'
+            },
+            createdAt: order.createdAt
+        }
+    })
+
+    res.json({
+        success: true,
+        count: data.length,
+        data
+    })
 }
 

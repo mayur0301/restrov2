@@ -37,10 +37,35 @@ exports.createDish = async (req, res) => {
 
 
 // READ ALL
+// exports.getDishes = async (req, res) => {
+//     const dishes = await Dish.find().populate('category', 'name')
+//     res.json(dishes)
+// }
 exports.getDishes = async (req, res) => {
-    const dishes = await Dish.find().populate('category', 'name')
-    res.json(dishes)
+    const dishes = await Dish.find()
+        .populate('category', 'name')
+        .sort({ name: 1 })
+
+    const data = dishes.map((dish) => ({
+        id: dish._id,
+        name: dish.name,
+        price: dish.price,
+        isAvailable: dish.isAvailable,
+        category: {
+            id: dish.category._id,
+            name: dish.category.name
+        },
+        createdAt: dish.createdAt,
+        updatedAt: dish.updatedAt
+    }))
+
+    res.json({
+        success: true,
+        count: data.length,
+        data
+    })
 }
+
 
 // UPDATE
 exports.updateDish = async (req, res) => {
@@ -95,10 +120,10 @@ exports.deleteDish = async (req, res) => {
 }
 
 exports.getDishesByCategory = async (req, res) => {
-  const { categoryId } = req.params
+    const { categoryId } = req.params
 
-  const dishes = await Dish.find({ category: categoryId })
-    .populate('category', 'name')
+    const dishes = await Dish.find({ category: categoryId })
+        .populate('category', 'name')
 
-  res.json(dishes)
+    res.json(dishes)
 }
