@@ -1,0 +1,23 @@
+const ROLES = {
+  ADMIN: 'ADMIN',
+  WAITER: 'WAITER',
+  CHEF: 'CHEF'
+}
+
+const TABLE_STATUS = {
+  FREE: 'FREE',
+  OCCUPIED: 'OCCUPIED'
+}
+
+const ORDER_STATUS = {
+  PENDING: 'PENDING',
+  PREPARING: 'PREPARING',
+  READY: 'READY',
+  COMPLETED: 'COMPLETED'
+}
+
+module.exports = {
+  ROLES,
+  TABLE_STATUS,
+  ORDER_STATUS
+}
