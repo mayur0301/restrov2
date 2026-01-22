@@ -55,6 +55,18 @@ exports.updateCategory = async (req, res) => {
 }
 
 // DELETE (hard delete)
+// exports.deleteCategory = async (req, res) => {
+//     const { id } = req.params
+
+//     const category = await Category.findById(id)
+//     if (!category) {
+//         return res.status(404).json({ message: 'Category not found' })
+//     }
+
+//     await category.deleteOne()
+//     res.json({ message: 'Category deleted' })
+// }
+
 exports.deleteCategory = async (req, res) => {
     const { id } = req.params
 
@@ -63,6 +75,17 @@ exports.deleteCategory = async (req, res) => {
         return res.status(404).json({ message: 'Category not found' })
     }
 
+    // 🔒 critical safety check
+    if (category.dishCount > 0) {
+        return res.status(400).json({
+            message: 'Category has dishes. Remove dishes first.'
+        })
+    }
+
     await category.deleteOne()
-    res.json({ message: 'Category deleted' })
+
+    res.json({
+        success: true,
+        message: 'Category deleted successfully'
+    })
 }

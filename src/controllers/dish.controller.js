@@ -1,5 +1,6 @@
 const Dish = require('../models/Dish')
 const Category = require('../models/Category')
+const Order = require('../models/Order')
 
 // CREATE
 exports.createDish = async (req, res) => {
@@ -98,6 +99,26 @@ exports.updateDish = async (req, res) => {
 }
 
 // DELETE (hard delete)
+// exports.deleteDish = async (req, res) => {
+//     const { id } = req.params
+
+//     const dish = await Dish.findById(id)
+//     if (!dish) {
+//         return res.status(404).json({ message: 'Dish not found' })
+//     }
+
+//     const category = await Category.findById(dish.category)
+
+//     await dish.deleteOne()
+
+//     // 🔥 decrement dish count
+//     if (category && category.dishCount > 0) {
+//         category.dishCount -= 1
+//         await category.save()
+//     }
+
+//     res.json({ message: 'Dish deleted' })
+// }
 exports.deleteDish = async (req, res) => {
     const { id } = req.params
 
@@ -106,18 +127,33 @@ exports.deleteDish = async (req, res) => {
         return res.status(404).json({ message: 'Dish not found' })
     }
 
+    // 🔒 SAFETY CHECK — active orders
+    const activeOrderExists = await Order.exists({
+        'items.dishId': dish._id,
+        status: { $in: ['PENDING', 'PREPARING', 'READY'] }
+    })
+
+    if (activeOrderExists) {
+        return res.status(400).json({
+            message: 'Dish is used in active orders and cannot be deleted'
+        })
+    }
+
+    // update category dishCount
     const category = await Category.findById(dish.category)
-
-    await dish.deleteOne()
-
-    // 🔥 decrement dish count
     if (category && category.dishCount > 0) {
         category.dishCount -= 1
         await category.save()
     }
 
-    res.json({ message: 'Dish deleted' })
+    await dish.deleteOne()
+
+    res.json({
+        success: true,
+        message: 'Dish deleted successfully'
+    })
 }
+
 
 exports.getDishesByCategory = async (req, res) => {
     const { categoryId } = req.params

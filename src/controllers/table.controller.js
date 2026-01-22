@@ -1,4 +1,5 @@
 const Table = require('../models/Table')
+const Order = require('../models/Order')
 
 // CREATE
 exports.createTable = async (req, res) => {
@@ -57,6 +58,25 @@ exports.updateTable = async (req, res) => {
 }
 
 // DELETE
+// exports.deleteTable = async (req, res) => {
+//     const { id } = req.params
+
+//     const table = await Table.findById(id)
+//     if (!table) {
+//         return res.status(404).json({ message: 'Table not found' })
+//     }
+
+//     // safety: do not delete occupied table
+//     if (table.status === 'OCCUPIED') {
+//         return res.status(400).json({
+//             message: 'Cannot delete table while occupied'
+//         })
+//     }
+
+//     await table.deleteOne()
+//     res.json({ message: 'Table deleted' })
+// }
+
 exports.deleteTable = async (req, res) => {
     const { id } = req.params
 
@@ -65,13 +85,25 @@ exports.deleteTable = async (req, res) => {
         return res.status(404).json({ message: 'Table not found' })
     }
 
-    // safety: do not delete occupied table
+    // 🔒 safety 1 — active table
     if (table.status === 'OCCUPIED') {
         return res.status(400).json({
-            message: 'Cannot delete table while occupied'
+            message: 'Cannot delete table while it is occupied'
+        })
+    }
+
+    // 🔒 safety 2 — order history
+    const orderExists = await Order.exists({ table: table._id })
+    if (orderExists) {
+        return res.status(400).json({
+            message: 'Table has order history and cannot be deleted'
         })
     }
 
     await table.deleteOne()
-    res.json({ message: 'Table deleted' })
+
+    res.json({
+        success: true,
+        message: 'Table deleted successfully'
+    })
 }
