@@ -15,21 +15,24 @@ exports.createTable = async (req, res) => {
 }
 
 // READ ALL (with status)
-// exports.getTables = async (req, res) => {
-//   const tables = await Table.find()
-//   res.json(tables)
-// }
 exports.getTables = async (req, res) => {
     const tables = await Table.find().sort({ name: 1 })
 
-    const data = tables.map((table) => ({
-        id: table._id,
-        name: table.name,
-        status: table.status,
-        isAvailable: table.status === 'FREE',
-        createdAt: table.createdAt,
-        updatedAt: table.updatedAt
-    }))
+    const data = tables.map((table) => {
+        const isAvailable =
+            table.status === 'FREE' && table.isBooked === false
+
+        return {
+            id: table._id,
+            name: table.name,
+            status: table.status,
+            isBooked: table.isBooked,
+            isAvailable,
+            createdAt: table.createdAt,
+            updatedAt: table.updatedAt
+        }
+    })
+
 
     res.json({
         success: true,
@@ -39,44 +42,7 @@ exports.getTables = async (req, res) => {
 }
 
 
-// UPDATE (only name, NOT status)
-exports.updateTable = async (req, res) => {
-    const { id } = req.params
-    const name = req.body.name?.toLowerCase()
-
-    const table = await Table.findById(id)
-    if (!table) {
-        return res.status(404).json({ message: 'Table not found' })
-    }
-
-    if (name) {
-        table.name = name
-    }
-
-    await table.save()
-    res.json(table)
-}
-
 // DELETE
-// exports.deleteTable = async (req, res) => {
-//     const { id } = req.params
-
-//     const table = await Table.findById(id)
-//     if (!table) {
-//         return res.status(404).json({ message: 'Table not found' })
-//     }
-
-//     // safety: do not delete occupied table
-//     if (table.status === 'OCCUPIED') {
-//         return res.status(400).json({
-//             message: 'Cannot delete table while occupied'
-//         })
-//     }
-
-//     await table.deleteOne()
-//     res.json({ message: 'Table deleted' })
-// }
-
 exports.deleteTable = async (req, res) => {
     const { id } = req.params
 
@@ -92,6 +58,14 @@ exports.deleteTable = async (req, res) => {
         })
     }
 
+    // 🔒 safety 2 — booked table
+    if (table.isBooked) {
+        return res.status(400).json({
+            message: 'Cannot delete a booked table'
+        })
+    }
+
+
     // 🔒 safety 2 — order history
     const orderExists = await Order.exists({ table: table._id })
     if (orderExists) {
@@ -105,5 +79,64 @@ exports.deleteTable = async (req, res) => {
     res.json({
         success: true,
         message: 'Table deleted successfully'
+    })
+}
+
+// BOOK TABLE (ADMIN)
+exports.bookTable = async (req, res) => {
+    const { id } = req.params
+
+    const table = await Table.findById(id)
+    if (!table) {
+        return res.status(404).json({ message: 'Table not found' })
+    }
+
+    // cannot book if table is occupied
+    if (table.status === 'OCCUPIED') {
+        return res.status(400).json({
+            message: 'Cannot book an occupied table'
+        })
+    }
+
+    if (table.isBooked) {
+        return res.status(400).json({
+            message: 'Table is already booked'
+        })
+    }
+
+
+    table.isBooked = true
+    await table.save()
+
+    res.json({
+        success: true,
+        message: 'Table booked successfully',
+        data: table
+    })
+}
+
+
+// UNBOOK TABLE (ADMIN)
+exports.unbookTable = async (req, res) => {
+    const { id } = req.params
+
+    const table = await Table.findById(id)
+    if (!table) {
+        return res.status(404).json({ message: 'Table not found' })
+    }
+
+    if (table.status === 'OCCUPIED') {
+        return res.status(400).json({
+            message: 'Cannot unbook table while it is occupied'
+        })
+    }
+
+    table.isBooked = false
+    await table.save()
+
+    res.json({
+        success: true,
+        message: 'Table unbooked successfully',
+        data: table
     })
 }

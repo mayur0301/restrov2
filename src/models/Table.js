@@ -14,7 +14,12 @@ const tableSchema = new mongoose.Schema(
       type: String,
       enum: Object.values(TABLE_STATUS),
       default: TABLE_STATUS.FREE
+    },
+    isBooked: {
+      type: Boolean,
+      default: false
     }
+
   },
   { timestamps: true }
 )

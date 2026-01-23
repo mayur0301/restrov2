@@ -4,8 +4,9 @@ const router = express.Router()
 const {
   createTable,
   getTables,
-  updateTable,
-  deleteTable
+  deleteTable,
+  bookTable,
+  unbookTable
 } = require('../controllers/table.controller')
 
 const { protect } = require('../middlewares/auth.middleware')
@@ -15,7 +16,8 @@ router.use(protect, isAdmin)
 
 router.post('/', createTable)
 router.get('/', getTables)
-router.put('/:id', updateTable)
+router.patch('/:id/book', bookTable)
+router.patch('/:id/unbook', unbookTable)
 router.delete('/:id', deleteTable)
 
 module.exports = router

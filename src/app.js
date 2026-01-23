@@ -20,6 +20,8 @@ app.use('/api/categories', require('./routes/category.routes'))
 app.use('/api/dishes', require('./routes/dish.routes'))
 app.use('/api/tables', require('./routes/table.routes'))
 app.use('/api/orders', require('./routes/order.routes'))
+app.use('/api/bookings', require('./routes/booking.routes'))
+
 
 
 module.exports = app

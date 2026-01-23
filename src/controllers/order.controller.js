@@ -2,6 +2,8 @@ const Order = require('../models/Order')
 const Table = require('../models/Table')
 const Dish = require('../models/Dish')
 const { ORDER_STATUS } = require('../utils/constants')
+const Booking = require('../models/Booking')
+
 
 //New Updates
 const getStatusMeta = (status) => {
@@ -97,7 +99,8 @@ const buildOrderSummary = (items) => {
 // }
 
 exports.createOrder = async (req, res) => {
-    const { table, items } = req.body
+    const { table, items, bookingId } = req.body
+
 
     if (!items || items.length === 0) {
         return res.status(400).json({ message: 'Order must contain items' })
@@ -108,11 +111,35 @@ exports.createOrder = async (req, res) => {
         return res.status(404).json({ message: 'Table not found' })
     }
 
+    // ❌ occupied table
     if (tableDoc.status === 'OCCUPIED') {
         return res.status(400).json({
             message: 'Table already has an active order'
         })
     }
+
+    // 🔒 booked table
+    if (tableDoc.isBooked) {
+        if (!bookingId) {
+            return res.status(400).json({
+                message: 'Table is booked'
+            })
+        }
+
+        const booking = await Booking.findById(bookingId)
+        if (
+            !booking ||
+            booking.table.toString() !== tableDoc._id.toString() ||
+            booking.status !== 'ARRIVED'
+        ) {
+            return res.status(400).json({
+                message: 'Booking not arrived or invalid'
+            })
+        }
+    }
+
+
+
 
     const orderItems = []
 
@@ -181,6 +208,7 @@ exports.updateOrderByChef = async (req, res) => {
 exports.completeOrder = async (req, res) => {
     const { id } = req.params
 
+    // 1️⃣ fetch order FIRST
     const order = await Order.findById(id)
     if (!order) {
         return res.status(404).json({ message: 'Order not found' })
@@ -192,18 +220,34 @@ exports.completeOrder = async (req, res) => {
         })
     }
 
+    // 2️⃣ complete order
     order.status = ORDER_STATUS.COMPLETED
     await order.save()
 
-    // free table
+    // 3️⃣ fetch table
     const table = await Table.findById(order.table)
     if (table) {
         table.status = 'FREE'
+
+        // 4️⃣ handle booking cleanup (ONLY AFTER order exists)
+        const booking = await Booking.findOne({
+            table: table._id,
+            status: 'ARRIVED'
+        })
+
+        if (booking) {
+            booking.status = 'COMPLETED'
+            await booking.save()
+
+            table.isBooked = false
+        }
+
         await table.save()
     }
 
     res.json(order)
 }
+
 
 
 // exports.getOrders = async (req, res) => {
