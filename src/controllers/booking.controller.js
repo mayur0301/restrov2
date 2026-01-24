@@ -1,20 +1,21 @@
 const Booking = require('../models/Booking')
 const Table = require('../models/Table')
+const AppError = require('../utils/AppError')
+const catchAsync = require('../utils/catchAsync')
 
-// CREATE BOOKING (ADMIN)
-exports.createBooking = async (req, res) => {
+// CREATE BOOKING
+exports.createBooking = catchAsync(async (req, res, next) => {
     const { table, customerName, membersCount } = req.body
 
     const tableDoc = await Table.findById(table)
     if (!tableDoc) {
-        return res.status(404).json({ message: 'Table not found' })
+        return next(new AppError('Table not found', 404))
     }
 
-    // table must be free & unbooked
     if (tableDoc.status === 'OCCUPIED' || tableDoc.isBooked) {
-        return res.status(400).json({
-            message: 'Table is not available for booking'
-        })
+        return next(
+            new AppError('Table is not available for booking', 400)
+        )
     }
 
     const booking = await Booking.create({
@@ -24,7 +25,6 @@ exports.createBooking = async (req, res) => {
         createdBy: req.user._id
     })
 
-    // 🔒 lock table
     tableDoc.isBooked = true
     await tableDoc.save()
 
@@ -32,22 +32,21 @@ exports.createBooking = async (req, res) => {
         success: true,
         data: booking
     })
-}
+})
 
-
-// MARK ARRIVAL (ADMIN / WAITER)
-exports.markArrival = async (req, res) => {
+// MARK ARRIVAL
+exports.markArrival = catchAsync(async (req, res, next) => {
     const { id } = req.params
 
     const booking = await Booking.findById(id).populate('table')
     if (!booking) {
-        return res.status(404).json({ message: 'Booking not found' })
+        return next(new AppError('Booking not found', 404))
     }
 
     if (booking.status !== 'PENDING') {
-        return res.status(400).json({
-            message: 'Booking already arrived or completed'
-        })
+        return next(
+            new AppError('Booking already arrived or completed', 400)
+        )
     }
 
     booking.status = 'ARRIVED'
@@ -58,7 +57,7 @@ exports.markArrival = async (req, res) => {
         message: 'Customer arrived',
         data: booking
     })
-}
+})
 
 
 // GET ALL BOOKINGS (ADMIN)
