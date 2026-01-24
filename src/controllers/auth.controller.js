@@ -32,10 +32,35 @@ exports.register = async (req, res) => {
 }
 
 // LOGIN
+// exports.login = async (req, res) => {
+//   const { email, password } = req.body
+
+//   const user = await User.findOne({ email })
+//   if (!user) {
+//     return res.status(400).json({ message: 'Invalid credentials' })
+//   }
+
+//   const isMatch = await user.comparePassword(password)
+//   if (!isMatch) {
+//     return res.status(400).json({ message: 'Invalid credentials' })
+//   }
+
+//   res.json({
+//     message: 'Login successful',
+//     user: {
+//       id: user._id,
+//       name: user.name,
+//       email: user.email,
+//       role: user.role
+//     },
+//     token: generateToken(user)
+//   })
+// }
+
 exports.login = async (req, res) => {
   const { email, password } = req.body
 
-  const user = await User.findOne({ email })
+  const user = await User.findOne({ email }).select('+password')
   if (!user) {
     return res.status(400).json({ message: 'Invalid credentials' })
   }
@@ -45,6 +70,16 @@ exports.login = async (req, res) => {
     return res.status(400).json({ message: 'Invalid credentials' })
   }
 
+  const token = generateToken(user)
+
+  // 🍪 SET COOKIE
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure: false,     // true in production (HTTPS)
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  })
+
   res.json({
     message: 'Login successful',
     user: {
@@ -53,6 +88,21 @@ exports.login = async (req, res) => {
       email: user.email,
       role: user.role
     },
-    token: generateToken(user)
+    token, // still returned (for non-browser clients)
   })
 }
+
+//Logout
+exports.logout = async (req, res) => {
+  res.clearCookie('token', {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: false // true in prod
+  })
+
+  res.json({
+    success: true,
+    message: 'Logged out successfully'
+  })
+}
+

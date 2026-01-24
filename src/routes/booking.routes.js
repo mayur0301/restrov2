@@ -3,7 +3,10 @@ const router = express.Router()
 
 const {
     createBooking,
-    markArrival
+    markArrival,
+    getAllBookings,
+    getActiveBookings,
+    getBookingById
 } = require('../controllers/booking.controller')
 
 const { protect } = require('../middlewares/auth.middleware')
@@ -14,7 +17,11 @@ router.use(protect, isAdmin)
 
 // create booking
 router.post('/', createBooking)
+router.get('/', getAllBookings)
+router.get('/active', getActiveBookings)
+router.get('/:id', getBookingById)
 router.patch('/:id/arrive', markArrival)
+
 
 
 module.exports = router
