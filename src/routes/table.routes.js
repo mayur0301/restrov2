@@ -16,7 +16,7 @@ router.use(protect, isAdmin)
 
 router.post('/', createTable)
 router.get('/', getTables)
-router.patch('/:id/book', bookTable)
+//router.patch('/:id/book', bookTable)
 router.patch('/:id/unbook', unbookTable)
 router.delete('/:id', deleteTable)
 
