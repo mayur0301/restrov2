@@ -11,27 +11,30 @@ const {
 } = require('../controllers/dish.controller')
 
 const { protect } = require('../middlewares/auth.middleware')
-const { isAdmin } = require('../middlewares/role.middleware')
+const { isAdmin, isWaiter } = require('../middlewares/role.middleware')
 
 const validateParams = require('../middlewares/validateParams')
 const { idParamSchema, categoryIdParamSchema } = require('../validations/common.validation')
 
-router.use(protect, isAdmin)
+router.use(protect)
 
-router.post('/', createDish)
-router.get('/', getDishes)
+router.post('/', isAdmin,createDish)
+router.get('/', isAdmin,getDishes)
+router.get('/waiter', isWaiter,getDishes)
 
 // router.put('/:id', updateDish)
 // router.delete('/:id', deleteDish)
 // router.get('/category/:categoryId', getDishesByCategory)
 router.put(
   '/:id',
+  isAdmin,
   validateParams(idParamSchema),
   updateDish
 )
 
 router.delete(
   '/:id',
+  isAdmin,
   validateParams(idParamSchema),
   deleteDish
 )

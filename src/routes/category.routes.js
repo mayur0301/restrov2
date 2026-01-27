@@ -19,18 +19,21 @@ const { idParamSchema } = require('../validations/common.validation')
 
 const { protect } = require('../middlewares/auth.middleware')
 
-const { isAdmin } = require('../middlewares/role.middleware')
+const { isAdmin, isWaiter } = require('../middlewares/role.middleware')
 
 const validateParams = require('../middlewares/validateParams')
 
-router.use(protect, isAdmin)
+router.use(protect)
 
-router.post('/', validate(createCategorySchema), createCategory)
+router.post('/', isAdmin, validate(createCategorySchema), createCategory)
 
-router.get('/', getCategories)
+router.get('/', isAdmin, getCategories)
 
-router.put('/:id', validateParams(idParamSchema), validate(updateCategorySchema), updateCategory)
+router.get('/waiter', isWaiter, getCategories)
 
-router.delete('/:id', validateParams(idParamSchema), deleteCategory)
+router.put('/:id', isAdmin, validateParams(idParamSchema), validate(updateCategorySchema), updateCategory)
+
+router.delete('/:id', isAdmin
+  , validateParams(idParamSchema), deleteCategory)
 
 module.exports = router
