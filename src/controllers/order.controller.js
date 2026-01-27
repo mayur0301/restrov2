@@ -99,7 +99,7 @@ const buildOrderSummary = (items) => {
 // }
 
 exports.createOrder = async (req, res) => {
-    const { table, items, bookingId } = req.body
+    const { table, items } = req.body
 
 
     if (!items || items.length === 0) {
@@ -119,24 +119,21 @@ exports.createOrder = async (req, res) => {
     }
 
     // 🔒 booked table
-    if (tableDoc.isBooked) {
-        if (!bookingId) {
-            return res.status(400).json({
-                message: 'Table is booked'
-            })
-        }
+    let activeBooking = null
 
-        const booking = await Booking.findById(bookingId)
-        if (
-            !booking ||
-            booking.table.toString() !== tableDoc._id.toString() ||
-            booking.status !== 'ARRIVED'
-        ) {
+    if (tableDoc.isBooked) {
+        activeBooking = await Booking.findOne({
+            table: tableDoc._id,
+            status: 'ARRIVED'
+        })
+
+        if (!activeBooking) {
             return res.status(400).json({
-                message: 'Booking not arrived or invalid'
+                message: 'Table is booked but customer has not arrived'
             })
         }
     }
+
 
 
 
@@ -378,3 +375,53 @@ exports.getOrdersForWaiter = async (req, res) => {
     })
 }
 
+
+// ADD ITEMS TO EXISTING ORDER
+exports.addItemsToOrder = async (req, res) => {
+    const { id } = req.params
+    const { items } = req.body
+
+    if (!items || items.length === 0) {
+        return res.status(400).json({
+            message: 'No items provided'
+        })
+    }
+
+    const order = await Order.findById(id)
+    if (!order) {
+        return res.status(404).json({ message: 'Order not found' })
+    }
+
+    if (order.status === 'COMPLETED') {
+        return res.status(400).json({
+            message: 'Cannot add items to completed order'
+        })
+    }
+
+    const newItems = []
+
+    for (const item of items) {
+        const dish = await Dish.findById(item.dish)
+        if (!dish || !dish.isAvailable) {
+            return res.status(400).json({
+                message: `Dish not available`
+            })
+        }
+
+        newItems.push({
+            dishId: dish._id,
+            dishName: dish.name,
+            unitPrice: dish.price,
+            quantity: item.quantity
+        })
+    }
+
+    order.items.push(...newItems)
+    await order.save()
+
+    res.json({
+        success: true,
+        message: 'Items added to order',
+        order
+    })
+}

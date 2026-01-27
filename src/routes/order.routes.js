@@ -1,5 +1,6 @@
 const express = require('express')
 const router = express.Router()
+const { ROLES } = require('../utils/constants')
 
 const {
     createOrder,
@@ -7,11 +8,12 @@ const {
     completeOrder,
     getOrders,
     getOrdersForChef,
-    getOrdersForWaiter
+    getOrdersForWaiter,
+    addItemsToOrder
 } = require('../controllers/order.controller')
 
 const { protect } = require('../middlewares/auth.middleware')
-const { isWaiter, isChef } = require('../middlewares/role.middleware')
+const { isWaiter, isChef, allowRoles } = require('../middlewares/role.middleware')
 
 const validateParams = require('../middlewares/validateParams')
 const { idParamSchema } = require('../validations/common.validation')
@@ -40,6 +42,14 @@ router.put(
 router.get('/', getOrders)
 router.get('/chef', isChef, getOrdersForChef)
 router.get('/waiter', isWaiter, getOrdersForWaiter)
+
+router.patch(
+    '/:id/add-items',
+    protect,
+    allowRoles(ROLES.WAITER),
+    validateParams(idParamSchema),
+    addItemsToOrder
+)
 
 
 module.exports = router

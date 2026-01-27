@@ -21,6 +21,14 @@ const bookingSchema = new mongoose.Schema(
             enum: ['PENDING', 'ARRIVED', 'COMPLETED'],
             default: 'PENDING'
         },
+        // bookingTime: {
+        //     type: Date,
+        //     default: Date.now
+        // },
+        // expiresAt: {
+        //     type: Date,
+        //     required: true
+        // },
         createdBy: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User'

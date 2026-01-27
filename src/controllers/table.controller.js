@@ -1,5 +1,6 @@
 const Table = require('../models/Table')
 const Order = require('../models/Order')
+const Booking = require('../models/Booking')
 
 // CREATE
 exports.createTable = async (req, res) => {
@@ -117,6 +118,74 @@ exports.bookTable = async (req, res) => {
 
 
 // UNBOOK TABLE (ADMIN)
+// exports.unbookTable = async (req, res) => {
+//     const { id } = req.params
+
+//     const table = await Table.findById(id)
+//     if (!table) {
+//         return res.status(404).json({ message: 'Table not found' })
+//     }
+
+//     if (table.status === 'OCCUPIED') {
+//         return res.status(400).json({
+//             message: 'Cannot unbook table while it is occupied'
+//         })
+//     }
+
+//     table.isBooked = false
+//     await table.save()
+
+//     res.json({
+//         success: true,
+//         message: 'Table unbooked successfully',
+//         data: table
+//     })
+// }
+// UNBOOK TABLE (ADMIN)
+// exports.unbookTable = async (req, res) => {
+//     const { id } = req.params
+
+//     const table = await Table.findById(id)
+//     if (!table) {
+//         return res.status(404).json({ message: 'Table not found' })
+//     }
+
+//     // 🔒 cannot unbook if table is occupied
+//     if (table.status === 'OCCUPIED') {
+//         return res.status(400).json({
+//             message: 'Cannot unbook table while it is occupied'
+//         })
+//     }
+
+//     // 🔎 find active booking for this table
+//     const booking = await Booking.findOne({
+//         table: table._id,
+//         status: { $in: ['PENDING', 'ARRIVED'] }
+//     })
+
+//     // ❌ arrived booking cannot be manually unbooked
+//     if (booking && booking.status === 'ARRIVED') {
+//         return res.status(400).json({
+//             message: 'Cannot unbook table after customer has arrived'
+//         })
+//     }
+
+//     // 🧹 cancel pending booking
+//     if (booking) {
+//         booking.status = 'COMPLETED'
+//         await booking.save()
+//     }
+
+//     table.isBooked = false
+//     await table.save()
+
+//     res.json({
+//         success: true,
+//         message: 'Table unbooked successfully',
+//         data: table
+//     })
+// }
+
 exports.unbookTable = async (req, res) => {
     const { id } = req.params
 
@@ -125,13 +194,32 @@ exports.unbookTable = async (req, res) => {
         return res.status(404).json({ message: 'Table not found' })
     }
 
-    if (table.status === 'OCCUPIED') {
+    // ❌ if order exists, never unbook
+    const orderExists = await Order.exists({
+        table: table._id,
+        status: { $ne: 'COMPLETED' }
+    })
+
+    if (orderExists) {
         return res.status(400).json({
-            message: 'Cannot unbook table while it is occupied'
+            message: 'Cannot unbook table with active order'
         })
     }
 
+    // 🔎 find active booking
+    const booking = await Booking.findOne({
+        table: table._id,
+        status: { $in: ['PENDING', 'ARRIVED'] }
+    })
+
+    // 🧹 close booking if exists
+    if (booking) {
+        booking.status = 'COMPLETED'
+        await booking.save()
+    }
+
     table.isBooked = false
+    table.status = 'FREE'
     await table.save()
 
     res.json({
