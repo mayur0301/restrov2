@@ -18,9 +18,9 @@ const { idParamSchema, categoryIdParamSchema } = require('../validations/common.
 
 router.use(protect)
 
-router.post('/', isAdmin,createDish)
-router.get('/', isAdmin,getDishes)
-router.get('/waiter', isWaiter,getDishes)
+router.post('/', isAdmin, createDish)
+router.get('/', isAdmin, isWaiter, getDishes)
+//router.get('/waiter', isWaiter,getDishes)
 
 // router.put('/:id', updateDish)
 // router.delete('/:id', deleteDish)
