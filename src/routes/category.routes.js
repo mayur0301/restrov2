@@ -19,7 +19,7 @@ const { idParamSchema } = require('../validations/common.validation')
 
 const { protect } = require('../middlewares/auth.middleware')
 
-const { isAdmin, isWaiter } = require('../middlewares/role.middleware')
+const { isAdmin, allowRoles } = require('../middlewares/role.middleware')
 
 const validateParams = require('../middlewares/validateParams')
 
@@ -27,9 +27,7 @@ router.use(protect)
 
 router.post('/', isAdmin, validate(createCategorySchema), createCategory)
 
-router.get('/', isAdmin, getCategories)
-
-router.get('/waiter', isWaiter, getCategories)
+router.get('/', allowRoles(ROLES.ADMIN, ROLES.WAITER), getCategories)
 
 router.put('/:id', isAdmin, validateParams(idParamSchema), validate(updateCategorySchema), updateCategory)
 

@@ -11,15 +11,19 @@ const {
 } = require('../controllers/table.controller')
 
 const { protect } = require('../middlewares/auth.middleware')
-const { isAdmin, isWaiter } = require('../middlewares/role.middleware')
+const { isAdmin, allowRoles } = require('../middlewares/role.middleware')
 
 const validateParams = require('../middlewares/validateParams')
 const { idParamSchema } = require('../validations/common.validation')
 
 router.use(protect)
 
-router.post('/', isAdmin,createTable)
-router.get('/', isAdmin, isWaiter,getTables)
+router.post('/', isAdmin, createTable)
+router.get(
+  '/',
+  allowRoles(ROLES.ADMIN, ROLES.WAITER),
+  getTables
+)
 //router.get('/waiter', isWaiter,getTables)
 //router.patch('/:id/book', bookTable)
 //router.patch('/:id/unbook', unbookTable)

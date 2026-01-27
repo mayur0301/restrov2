@@ -11,7 +11,7 @@ const {
 } = require('../controllers/dish.controller')
 
 const { protect } = require('../middlewares/auth.middleware')
-const { isAdmin, isWaiter } = require('../middlewares/role.middleware')
+const { isAdmin, allowRoles } = require('../middlewares/role.middleware')
 
 const validateParams = require('../middlewares/validateParams')
 const { idParamSchema, categoryIdParamSchema } = require('../validations/common.validation')
@@ -19,7 +19,7 @@ const { idParamSchema, categoryIdParamSchema } = require('../validations/common.
 router.use(protect)
 
 router.post('/', isAdmin, createDish)
-router.get('/', isAdmin, isWaiter, getDishes)
+router.get('/', allowRoles(ROLES.ADMIN, ROLES.WAITER), getDishes)
 //router.get('/waiter', isWaiter,getDishes)
 
 // router.put('/:id', updateDish)
