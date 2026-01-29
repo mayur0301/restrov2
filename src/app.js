@@ -11,7 +11,7 @@ app.use(cors({
         "https://chilli-chhat.vercel.app"
     ],
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allowHeaders: ["Content-Type", "Authorization"],
     exposedHeaders: ["Authorization"]
 }))
