@@ -23,7 +23,7 @@ router.use(protect)
 router.post('/', isAdmin, createTable)
 router.get(
   '/',
-  allowRoles(ROLES.ADMIN, ROLES.WAITER),
+  allowRoles(ROLES.ADMIN, ROLES.WAITER, ROLES.CHEF),
   getTables
 )
 //router.get('/waiter', isWaiter,getTables)

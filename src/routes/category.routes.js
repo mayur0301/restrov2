@@ -26,7 +26,7 @@ router.use(protect)
 
 router.post('/', isAdmin, validate(createCategorySchema), createCategory)
 
-router.get('/', allowRoles(ROLES.ADMIN, ROLES.WAITER), getCategories)
+router.get('/', allowRoles(ROLES.ADMIN, ROLES.WAITER, ROLES.CHEF), getCategories)
 
 router.put('/:id', isAdmin, validateParams(idParamSchema), validate(updateCategorySchema), updateCategory)
 

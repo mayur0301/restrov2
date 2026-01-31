@@ -21,7 +21,7 @@ const { idParamSchema, categoryIdParamSchema } = require('../validations/common.
 router.use(protect)
 
 router.post('/', isAdmin, createDish)
-router.get('/', allowRoles(ROLES.ADMIN, ROLES.WAITER), getDishes)
+router.get('/', allowRoles(ROLES.ADMIN, ROLES.WAITER, ROLES.CHEF), getDishes)
 //router.get('/waiter', isWaiter,getDishes)
 
 // router.put('/:id', updateDish)
