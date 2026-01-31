@@ -29,6 +29,10 @@ app.use('/api/dishes', require('./routes/dish.routes'))
 app.use('/api/tables', require('./routes/table.routes'))
 app.use('/api/orders', require('./routes/order.routes'))
 app.use('/api/bookings', require('./routes/booking.routes'))
+app.use('/api/bills', require('./routes/bill.routes'))
+app.use('/api/invoices', require('./routes/invoice.routes'))
+
+
 
 // 🚫 HANDLE UNKNOWN ROUTES (must be AFTER routes)
 app.use((req, res, next) => {

@@ -3,6 +3,7 @@ const Table = require('../models/Table')
 const Dish = require('../models/Dish')
 const { ORDER_STATUS } = require('../utils/constants')
 const Booking = require('../models/Booking')
+const { assertNoOpenSessionForTable } = require('../utils/sessionGuard')
 
 
 //New Updates
@@ -101,6 +102,8 @@ const buildOrderSummary = (items) => {
 exports.createOrder = async (req, res) => {
     const { table, items } = req.body
 
+    // Guard: no open session for table
+    await assertNoOpenSessionForTable(table)
 
     if (!items || items.length === 0) {
         return res.status(400).json({ message: 'Order must contain items' })
@@ -222,25 +225,25 @@ exports.completeOrder = async (req, res) => {
     await order.save()
 
     // 3️⃣ fetch table
-    const table = await Table.findById(order.table)
-    if (table) {
-        table.status = 'FREE'
+    // const table = await Table.findById(order.table)
+    // if (table) {
+    //     table.status = 'FREE'
 
-        // 4️⃣ handle booking cleanup (ONLY AFTER order exists)
-        const booking = await Booking.findOne({
-            table: table._id,
-            status: 'ARRIVED'
-        })
+    //     // 4️⃣ handle booking cleanup (ONLY AFTER order exists)
+    //     const booking = await Booking.findOne({
+    //         table: table._id,
+    //         status: 'ARRIVED'
+    //     })
 
-        if (booking) {
-            booking.status = 'COMPLETED'
-            await booking.save()
+    //     if (booking) {
+    //         booking.status = 'COMPLETED'
+    //         await booking.save()
 
-            table.isBooked = false
-        }
+    //         table.isBooked = false
+    //     }
 
-        await table.save()
-    }
+    //     await table.save()
+    // }
 
     res.json(order)
 }
@@ -391,6 +394,8 @@ exports.addItemsToOrder = async (req, res) => {
     if (!order) {
         return res.status(404).json({ message: 'Order not found' })
     }
+
+    
 
     if (order.status === 'COMPLETED') {
         return res.status(400).json({
